@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": "src",
+    "outDir": "dist-browser",
+    "types": [],
+    "sourceMap": false
+  },
+  "include": ["src/web/browser-app.ts", "src/web/search-filters-panel.ts", "src/web/results-view.ts", "src/web/filter-state-persistence.ts", "src/catalog/book.ts", "src/catalog/filter-catalog.ts"]
+}

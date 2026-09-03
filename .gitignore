@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-browser/
+coverage/
+.env
+.env.local
+.env.*.local
+.github/workflow-state/
+*.log
+.DS_Store
+Thumbs.db

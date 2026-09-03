@@ -1,0 +1,22 @@
+{
+  "name": "bookstore-app",
+  "version": "1.0.0",
+  "description": "Bookstore search & filtering application (EPMCDMETST-52015) — self-contained, portable to its own repository.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:browser": "tsc -p tsconfig.browser.json",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --coverage",
+    "start": "npm run build:browser && tsx src/api/start.ts"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.19.43",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.4",
+    "tsx": "^4.15.0",
+    "typescript": "^5.5.0"
+  }
+}

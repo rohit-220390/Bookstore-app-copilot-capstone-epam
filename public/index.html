@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bookstore Search</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <h1>📚 Bookstore Search</h1>
+
+    <div class="tabs" id="category-tabs">
+      <button type="button" class="tab active" data-category="fiction">Fiction</button>
+      <button type="button" class="tab" data-category="non-fiction">Non-Fiction</button>
+    </div>
+
+    <div class="filters" id="filters"></div>
+    <button type="button" id="clear-all">Clear All Filters</button>
+
+    <div id="error" class="error" hidden></div>
+    <p id="summary"></p>
+    <ul id="results"></ul>
+  </div>
+
+  <script type="module" src="/app/web/browser-app.js"></script>
+</body>
+</html>
