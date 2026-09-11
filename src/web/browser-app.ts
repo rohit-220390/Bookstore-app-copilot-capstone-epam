@@ -18,8 +18,21 @@ const clearAllButton = requireElement<HTMLButtonElement>('clear-all');
 const errorEl = requireElement<HTMLElement>('error');
 const summaryEl = requireElement<HTMLElement>('summary');
 const resultsEl = requireElement<HTMLUListElement>('results');
+const loadingEl = requireElement<HTMLElement>('loading');
+const prevPageBtn = requireElement<HTMLButtonElement>('prev-page');
+const nextPageBtn = requireElement<HTMLButtonElement>('next-page');
+const searchInput = requireElement<HTMLInputElement>('search-input');
 
 const persistence = new LocalStorageFilterPersistence(window.localStorage);
+
+const SORT_LABELS: Record<SortOption, string> = {
+  'price-high-to-low': 'Price: High to Low',
+  'price-low-to-high': 'Price: Low to High',
+  'rating-high-to-low': 'Rating: High to Low',
+  'publication-date-newest': 'Publication Date: Newest First',
+  'publication-date-oldest': 'Publication Date: Oldest First',
+  'relevance': 'Relevance',
+};
 
 const searchViaApi: SearchFn = async (category, filters, page) => {
   const params = new URLSearchParams({ category, page: String(page) });
@@ -28,6 +41,7 @@ const searchViaApi: SearchFn = async (category, filters, page) => {
   if (filters.publicationDate) params.set('publicationDate', filters.publicationDate);
   if (filters.minRating !== undefined) params.set('minRating', String(filters.minRating));
   if (filters.sort) params.set('sort', filters.sort);
+  if (filters.q) params.set('q', filters.q);
 
   const res = await fetch(`/api/search?${params.toString()}`);
   if (!res.ok) {
@@ -69,8 +83,6 @@ function renderStars(
   legend.textContent = 'Customer Reviews';
   wrapper.appendChild(legend);
 
-  // Label just shows the tier number; the underlying filter still buckets it exclusively
-  // (see searchBooks in query-builder.ts) — e.g. "3★" matches ratings [3, 4) only.
   for (const rating of ratings) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -95,7 +107,7 @@ function renderSortDropdown(
 
   const select = document.createElement('select');
   select.className = 'sort-dropdown';
-  
+
   // Add default option
   const defaultOption = document.createElement('option');
   defaultOption.value = '';
@@ -103,11 +115,11 @@ function renderSortDropdown(
   defaultOption.selected = !active;
   select.appendChild(defaultOption);
 
-  // Add sort options
+  // Add sort options with human-readable labels
   for (const option of options) {
     const optionEl = document.createElement('option');
     optionEl.value = option;
-    optionEl.textContent = option;
+    optionEl.textContent = SORT_LABELS[option];
     optionEl.selected = option === active;
     select.appendChild(optionEl);
   }
@@ -115,9 +127,7 @@ function renderSortDropdown(
   select.addEventListener('change', (e) => {
     const target = e.target as HTMLSelectElement;
     const value = target.value;
-    console.log('Sort dropdown changed:', value);
     if (value && value !== '') {
-      console.log('Calling onSelect with:', value);
       onSelect(value as SortOption);
     }
   });
@@ -149,7 +159,6 @@ function render(): void {
   filtersEl.appendChild(renderStars(options.minRating, selected.minRating, (value) => panel.clickStar(value)));
   filtersEl.appendChild(
     renderSortDropdown('Sort By', panel.getSortOptions(), selected.sort, (value) => {
-      console.log('Sort callback invoked with:', value);
       panel.selectSort(value);
     }),
   );
@@ -158,12 +167,34 @@ function render(): void {
   errorEl.hidden = !error;
   errorEl.textContent = error ?? '';
 
+  loadingEl.hidden = !view.getIsLoading();
+
   summaryEl.textContent = `${view.getTotal()} result(s) \u2014 page ${view.getPage()}`;
 
+  prevPageBtn.disabled = !view.hasPreviousPage();
+  nextPageBtn.disabled = !view.hasNextPage();
+
+  // Sync keyword input with current filter state (e.g. after Clear All)
+  searchInput.value = selected.q ?? '';
+
   resultsEl.innerHTML = '';
+
+  // Empty state
+  if (view.getItems().length === 0 && view.getTotal() === 0 && !view.getError()) {
+    const emptyMsg = document.createElement('li');
+    emptyMsg.textContent = 'No results found.';
+    resultsEl.appendChild(emptyMsg);
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.textContent = 'Clear filters';
+    clearBtn.addEventListener('click', () => view.clearFilters());
+    resultsEl.appendChild(clearBtn);
+    return;
+  }
+
   for (const book of view.getItems()) {
     const li = document.createElement('li');
-    li.textContent = `${book.title} \u2014 ${book.format}, ${book.language}, \u2605${book.averageRating.toFixed(1)}, $${book.price.toFixed(2)}`;
+    li.textContent = `${book.title} by ${book.author} \u2014 ${book.format}, ${book.language}, \u2605${book.averageRating.toFixed(1)}, $${book.price.toFixed(2)}`;
     resultsEl.appendChild(li);
   }
 }
@@ -181,6 +212,10 @@ async function selectCategory(category: BookCategory): Promise<void> {
   isInitialLoad = false;
   view.onUpdate(render);
   clearAllButton.onclick = () => view.clearFilters();
+  prevPageBtn.onclick = async () => { await view.prevPage(); render(); };
+  nextPageBtn.onclick = async () => { await view.nextPage(); render(); };
+
+  searchInput.addEventListener('input', () => panel.setKeyword(searchInput.value));
 
   await view.refresh();
   render();

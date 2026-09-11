@@ -5,6 +5,7 @@ export type BookLanguage = 'english' | 'spanish' | 'french' | 'german';
 export interface Book {
   id: string;
   title: string;
+  author: string;
   category: BookCategory;
   format: BookFormat;
   language: BookLanguage;

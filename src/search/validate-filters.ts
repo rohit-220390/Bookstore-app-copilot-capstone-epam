@@ -15,6 +15,7 @@ export interface RawSearchFilters {
   publicationDate?: string;
   minRating?: string;
   sort?: string;
+  q?: string;
 }
 
 export interface ValidatedSearchFilters {
@@ -24,6 +25,7 @@ export interface ValidatedSearchFilters {
   publicationDate?: PublicationDateWindow;
   minRating?: MinRating;
   sort?: SortOption;
+  q?: string;
 }
 
 const VALID_CATEGORIES: BookCategory[] = ['fiction', 'non-fiction'];
@@ -68,6 +70,10 @@ export function validateFilters(raw: RawSearchFilters): ValidatedSearchFilters {
     result.sort = raw.sort as SortOption;
   } else if (raw.sort) {
     result.sort = 'relevance'; // Default for invalid sort values
+  }
+  // Keyword search: trim and pass through if non-empty
+  if (raw.q && raw.q.trim().length > 0) {
+    result.q = raw.q.trim();
   }
 
   return result;

@@ -66,8 +66,7 @@ function sortBooks(books: Book[], sort?: SortOption): Book[] {
  * Filters the catalog by validated filters, then sorts, then paginates. Execution order per DR-013:
  * 1. Filter: Category/format/language are exact matches; publicationDate is threshold-based.
  *    minRating is bucketed (exclusive of the next higher tier) so each Customer Reviews option shows
- *    a distinct rating range rather than an overlapping "and above" set — e.g. "3-stars" means [3, 4),
- *    "4-stars" means [4, 5].
+ *    a distinct rating range rather than an overlapping "and above" set.
  * 2. Sort: Apply sorting to the filtered result set by the selected sort option.
  * 3. Paginate: Slice the sorted, filtered results by page/limit.
  * Fiction and Non-Fiction run through the same code path, parameterized only by `filters.category`.
@@ -95,6 +94,7 @@ export function searchBooks(
       const nextTier = tiers[tiers.indexOf(filters.minRating) + 1];
       if (nextTier !== undefined && book.averageRating >= nextTier) return false;
     }
+    if (filters.q && !book.title.toLowerCase().includes(filters.q.toLowerCase())) return false;
     return true;
   });
 

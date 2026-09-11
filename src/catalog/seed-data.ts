@@ -11,6 +11,7 @@ function daysAgo(days: number): string {
 interface SeedBookRecord {
   id: string;
   title: string;
+  author: string;
   category: BookCategory;
   format: BookFormat;
   language: BookLanguage;
@@ -35,6 +36,7 @@ const seedRecords = JSON.parse(
 export const seedBooks: Book[] = seedRecords.map((record) => ({
   id: record.id,
   title: record.title,
+  author: record.author,
   category: record.category,
   format: record.format,
   language: record.language,

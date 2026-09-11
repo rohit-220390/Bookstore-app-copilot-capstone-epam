@@ -61,11 +61,15 @@ export function createAppServer(catalog: Book[]): Server {
 
       if (url.pathname === '/api/search') {
         const rawQuery: Record<string, string | undefined> = {};
-        for (const key of ['category', 'format', 'language', 'publicationDate', 'minRating', 'page', 'limit', 'sort']) {
+        for (const key of ['category', 'format', 'language', 'publicationDate', 'minRating', 'page', 'limit', 'sort', 'q']) {
           rawQuery[key] = url.searchParams.get(key) ?? undefined;
         }
         const { status, body } = handleSearchRequest(catalog, rawQuery);
-        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.writeHead(status, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET',
+        });
         res.end(JSON.stringify(body));
         return;
       }
