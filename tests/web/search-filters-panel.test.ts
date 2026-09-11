@@ -37,13 +37,14 @@ describe('SearchFiltersPanel', () => {
     expect(panel.getSelectedFilters().minRating).toBe(4);
   });
 
-  it('clicking the already-active star is a no-op (does not re-emit change)', () => {
+  it('clicking the already-active star toggles it off (clears minRating)', () => {
     const panel = new SearchFiltersPanel('non-fiction');
     const listener = jest.fn();
     panel.clickStar(3);
     panel.onChange(listener);
     panel.clickStar(3);
-    expect(listener).not.toHaveBeenCalled();
+    expect(panel.getSelectedFilters().minRating).toBeUndefined();
+    expect(listener).toHaveBeenCalledWith({});
   });
 
   it('notifies listeners with a snapshot of the current selection on every change', () => {
@@ -96,5 +97,59 @@ describe('SearchFiltersPanel', () => {
 
     expect(panel.getSelectedFilters()).toEqual({ format: 'audiobook', minRating: 3 });
     expect(listener).toHaveBeenCalledWith({ format: 'audiobook', minRating: 3 });
+  });
+
+  it('selectFormat toggles off when selecting same format twice', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    panel.selectFormat('hardcover');
+    panel.selectFormat('hardcover');
+    expect(panel.getSelectedFilters().format).toBeUndefined();
+  });
+
+  it('selectLanguage toggles off when selecting same language twice', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    panel.selectLanguage('english');
+    panel.selectLanguage('english');
+    expect(panel.getSelectedFilters().language).toBeUndefined();
+  });
+
+  it('selectPublicationDate toggles off when selecting same window twice', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    panel.selectPublicationDate('last-30-days');
+    panel.selectPublicationDate('last-30-days');
+    expect(panel.getSelectedFilters().publicationDate).toBeUndefined();
+  });
+
+  it('clickStar toggles off when clicking active star', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    panel.clickStar(4);
+    panel.clickStar(4);
+    expect(panel.getSelectedFilters().minRating).toBeUndefined();
+  });
+
+  it('setKeyword trims and sets keyword', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    const listener = jest.fn();
+    panel.onChange(listener);
+    panel.setKeyword('  hobbit  ');
+    expect(panel.getSelectedFilters().q).toBe('hobbit');
+    expect(listener).toHaveBeenCalledWith({ q: 'hobbit' });
+  });
+
+  it('setKeyword with blank input sets q to undefined', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    panel.setKeyword('something');
+    panel.setKeyword('   ');
+    expect(panel.getSelectedFilters().q).toBeUndefined();
+  });
+
+  it('listeners are notified on each toggle and keyword change', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    const listener = jest.fn();
+    panel.onChange(listener);
+    panel.selectFormat('hardcover');
+    panel.selectFormat('hardcover'); // toggle off
+    panel.setKeyword('test');
+    expect(listener).toHaveBeenCalledTimes(3);
   });
 });

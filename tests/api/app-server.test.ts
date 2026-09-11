@@ -3,7 +3,7 @@ import type { Book } from '../../src/catalog/book.js';
 import { createAppServer } from '../../src/api/app-server.js';
 
 const catalog: Book[] = [
-  { id: '1', title: 'Non-Fiction Hardcover EN', category: 'non-fiction', format: 'hardcover', language: 'english', publicationDate: '2026-01-01T00:00:00.000Z', averageRating: 4.5, price: 29.99 },
+  { id: '1', title: 'Non-Fiction Hardcover EN', author: 'Test Author', category: 'non-fiction', format: 'hardcover', language: 'english', publicationDate: '2026-01-01T00:00:00.000Z', averageRating: 4.5, price: 29.99 },
 ];
 
 describe('createAppServer', () => {
@@ -54,5 +54,28 @@ describe('createAppServer', () => {
   it('rejects directory traversal attempts outside the browser dist directory', async () => {
     const res = await fetch(`${baseUrl}/app/../../../package.json`);
     expect(res.status).toBe(404);
+  });
+
+  it('/api/search includes Access-Control-Allow-Origin header', async () => {
+    const res = await fetch(`${baseUrl}/api/search?category=non-fiction`);
+    expect(res.headers.get('access-control-allow-origin')).toBe('*');
+  });
+
+  it('/api/search includes Access-Control-Allow-Methods header', async () => {
+    const res = await fetch(`${baseUrl}/api/search?category=non-fiction`);
+    expect(res.headers.get('access-control-allow-methods')).toBe('GET');
+  });
+
+  it('CORS headers present on error responses too', async () => {
+    const res = await fetch(`${baseUrl}/api/search?category=invalid-category`);
+    expect(res.headers.get('access-control-allow-origin')).toBe('*');
+  });
+
+  it('q param filters results by title match', async () => {
+    const res = await fetch(`${baseUrl}/api/search?category=non-fiction&q=hardcover`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { items: Book[] };
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0].title).toContain('Hardcover');
   });
 });

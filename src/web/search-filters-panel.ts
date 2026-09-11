@@ -14,6 +14,7 @@ export interface SelectedFilters {
   publicationDate?: PublicationDateWindow;
   minRating?: MinRating;
   sort?: SortOption;
+  q?: string;
 }
 
 export type FilterChangeListener = (filters: SelectedFilters) => void;
@@ -48,37 +49,56 @@ export class SearchFiltersPanel {
 
   private emitChange(): void {
     const snapshot = { ...this.selected };
-    console.log('emitChange: notifying', this.listeners.length, 'listeners with:', snapshot);
     for (const listener of this.listeners) listener(snapshot);
   }
 
   selectFormat(format: BookFormat): void {
-    this.selected.format = format;
+    if (this.selected.format === format) {
+      this.selected.format = undefined;
+    } else {
+      this.selected.format = format;
+    }
     this.emitChange();
   }
 
   selectLanguage(language: BookLanguage): void {
-    this.selected.language = language;
+    if (this.selected.language === language) {
+      this.selected.language = undefined;
+    } else {
+      this.selected.language = language;
+    }
     this.emitChange();
   }
 
   selectPublicationDate(window: PublicationDateWindow): void {
-    this.selected.publicationDate = window;
+    if (this.selected.publicationDate === window) {
+      this.selected.publicationDate = undefined;
+    } else {
+      this.selected.publicationDate = window;
+    }
     this.emitChange();
   }
 
-  /** Clicking star N applies the "N-stars and above" threshold; clicking a different star replaces it. Clicking the already-active star is a no-op. */
+  /** Clicking star N toggles the rating: if already active, clears it; otherwise sets it. */
   clickStar(rating: MinRating): void {
-    if (this.selected.minRating === rating) return;
-    this.selected.minRating = rating;
+    if (this.selected.minRating === rating) {
+      this.selected.minRating = undefined;
+    } else {
+      this.selected.minRating = rating;
+    }
     this.emitChange();
   }
 
   /** Selects a sort option; emits through the same onChange path as filter selections. */
   selectSort(option: SortOption): void {
-    console.log('selectSort called with:', option);
     this.selected.sort = option;
-    console.log('About to emit change, selected:', this.selected);
+    this.emitChange();
+  }
+
+  /** Sets a keyword search string; blank/whitespace-only input clears it. */
+  setKeyword(q: string): void {
+    const trimmed = q.trim();
+    this.selected.q = trimmed.length > 0 ? trimmed : undefined;
     this.emitChange();
   }
 
