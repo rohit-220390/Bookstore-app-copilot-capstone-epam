@@ -111,10 +111,10 @@ describe('ResultsView', () => {
     view.onUpdate(listener);
 
     await view.refresh();
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(2); // once for loading start, once for completion
 
     await view.refresh();
-    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenCalledTimes(4);
   });
 
   it('getItems returns [] and getTotal returns 0 when backend returns no items', async () => {
@@ -243,5 +243,86 @@ describe('ResultsView', () => {
 
     expect(view.getIsLoading()).toBe(false);
     expect(view.getError()).toBe('Search failed');
+  });
+
+  it('getLimit() returns the limit value from the most recent refresh response (ENH-006 T6)', async () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    const search = jest.fn(async (): Promise<SearchResultPage> => ({ items: [sampleBook], total: 1, page: 1, limit: 15 }));
+    const view = new ResultsView(panel, search);
+
+    await view.refresh();
+
+    expect(view.getLimit()).toBe(15);
+  });
+
+  it('getLimit() updates when limit changes across refreshes (ENH-006 T6)', async () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    const search = jest.fn<Promise<SearchResultPage>, [string, unknown, number]>()
+      .mockResolvedValueOnce({ items: [sampleBook], total: 1, page: 1, limit: 10 })
+      .mockResolvedValueOnce({ items: [sampleBook], total: 1, page: 1, limit: 25 });
+    const view = new ResultsView(panel, search);
+
+    await view.refresh();
+    expect(view.getLimit()).toBe(10);
+
+    await view.refresh();
+    expect(view.getLimit()).toBe(25);
+  });
+
+  it('stale slow response is discarded when a faster newer request completes first (ENH-007 T7)', async () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+
+    const staleBook: Book = { ...sampleBook, id: 'stale', title: 'Stale Result' };
+    const freshBook: Book = { ...sampleBook, id: 'fresh', title: 'Fresh Result' };
+
+    let resolveSlowRequest!: (value: SearchResultPage) => void;
+    const slowDeferred = new Promise<SearchResultPage>((resolve) => { resolveSlowRequest = resolve; });
+
+    const search = jest.fn<Promise<SearchResultPage>, [string, unknown, number]>()
+      .mockReturnValueOnce(slowDeferred)
+      .mockResolvedValueOnce({ items: [freshBook], total: 1, page: 1, limit: 20 });
+
+    const view = new ResultsView(panel, search);
+
+    // Start slow request A (does not resolve yet)
+    const refreshA = view.refresh();
+
+    // Start faster request B (resolves immediately)
+    const refreshB = view.refresh();
+    await refreshB;
+
+    // Now resolve the stale slow request A
+    resolveSlowRequest({ items: [staleBook], total: 99, page: 1, limit: 20 });
+    await refreshA;
+
+    // Final state must reflect request B, not the stale request A
+    expect(view.getItems()).toEqual([freshBook]);
+    expect(view.getTotal()).toBe(1);
+    expect(view.getIsLoading()).toBe(false);
+  });
+
+  it('isLoading stays false after stale request resolves post newer completion (ENH-007 T7)', async () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+
+    let resolveSlowRequest!: (value: SearchResultPage) => void;
+    const slowDeferred = new Promise<SearchResultPage>((resolve) => { resolveSlowRequest = resolve; });
+
+    const search = jest.fn<Promise<SearchResultPage>, [string, unknown, number]>()
+      .mockReturnValueOnce(slowDeferred)
+      .mockResolvedValueOnce({ items: [sampleBook], total: 1, page: 1, limit: 20 });
+
+    const view = new ResultsView(panel, search);
+
+    const refreshA = view.refresh();
+    const refreshB = view.refresh();
+    await refreshB;
+
+    expect(view.getIsLoading()).toBe(false);
+
+    resolveSlowRequest({ items: [sampleBook], total: 1, page: 1, limit: 20 });
+    await refreshA;
+
+    // Loading state must remain false after the stale request resolves
+    expect(view.getIsLoading()).toBe(false);
   });
 });

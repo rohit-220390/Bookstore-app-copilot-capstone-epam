@@ -37,6 +37,12 @@ function sanitizeFilters(category: BookCategory, filters: SelectedFilters): Sele
   if (filters.sort !== undefined && sortOptions.includes(filters.sort)) {
     sanitized.sort = filters.sort;
   }
+  if (typeof filters.author === 'string' && filters.author.trim().length > 0) {
+    sanitized.author = filters.author.trim();
+  }
+  if (typeof filters.q === 'string' && filters.q.trim().length > 0) {
+    sanitized.q = filters.q.trim();
+  }
 
   return sanitized;
 }

@@ -44,7 +44,6 @@ Other useful commands:
 
 ## Known limitations (capstone scope)
 
-- **In-memory catalog only** (`src/catalog/seed-data.json`, loaded and combined with a relative publication date at startup) — no persistence/database. Data resets on every process restart. Sufficient to satisfy `EPMCDMETST-52015`'s acceptance criteria; swap in a real data store before production use.
+- **In-memory catalog only** (`src/catalog/seed-data.json`, loaded and combined with a relative publication date at startup) — no persistence/database. Data resets on every process restart.
 - **No UI framework** — `src/web/*.ts` (excluding `browser-app.ts`) expose presentation-logic classes (state + events) with no DOM dependency, so any UI framework can be wired on top; `browser-app.ts` is a minimal vanilla-DOM reference implementation.
 - **Paths resolved via `process.cwd()`** — the app server and seed-data loader assume they are run with the working directory set to `bookstore-app/` (true for all `npm run …` scripts in this package).
-- **Customer Reviews filter deviates from `EPMCDMETST-52015`'s literal acceptance criteria (by explicit product decision)** — the Jira story specifies cumulative "X-stars and above" thresholds (3+ includes 4+ books). This implementation instead treats each tier as a mutually exclusive bucket bounded by the next-higher tier (`3★` = ratings `[3, 4)`, `4★` = ratings `[4, 5]`), so a book only ever matches one rating tier. `docs/requirements.md` still reflects the original Jira wording; this is a locally-scoped, requested deviation, not a re-sync from Jira.
