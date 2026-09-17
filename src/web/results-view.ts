@@ -14,12 +14,12 @@ export type ResultsUpdateListener = () => void;
 
 /**
  * Connects a SearchFiltersPanel to a search function and holds the current results/error state.
- * On a failed refresh, previously displayed items are kept (per docs/architecture.md §7) rather
+ * On a failed refresh, previously displayed items are kept (per docs/architecture.md ï¿½7) rather
  * than cleared, and the page resets to 1 whenever a filter changes.
  *
  * When a `persistence` port is supplied, every filter change (including via `panel.clearAll()`
  * and `clearFilters()` below) is saved through it, and any previously saved filters for the
- * panel's category are restored at construction time — both through the same `onChange` path,
+ * panel's category are restored at construction time ï¿½ both through the same `onChange` path,
  * so persistence never falls out of sync with the panel's selections (DR-008).
  */
 export class ResultsView {
@@ -29,6 +29,7 @@ export class ResultsView {
   private limit = 20;
   private isLoading = false;
   private error: string | undefined;
+  private requestId = 0;
   private readonly updateListeners: ResultsUpdateListener[] = [];
 
   constructor(
@@ -48,30 +49,36 @@ export class ResultsView {
     }
   }
 
-  /** Clears all filters via the panel — the "Clear All Filters" UI trigger calls this. */
+  /** Clears all filters via the panel ï¿½ the "Clear All Filters" UI trigger calls this. */
   clearFilters(): void {
     this.panel.clearAll();
   }
 
-  /** Subscribes to be notified after every refresh (success or failure) — used by UI layers to re-render. */
+  /** Subscribes to be notified after every refresh (success or failure) ï¿½ used by UI layers to re-render. */
   onUpdate(listener: ResultsUpdateListener): void {
     this.updateListeners.push(listener);
   }
 
   async refresh(): Promise<void> {
+    const thisId = ++this.requestId;
     this.isLoading = true;
+    for (const listener of this.updateListeners) listener();
     try {
       const result = await this.search(this.panel.getCategory(), this.panel.getSelectedFilters(), this.page);
+      if (thisId !== this.requestId) return;
       this.items = result.items;
       this.total = result.total;
       this.limit = result.limit;
       this.error = undefined;
     } catch (error) {
+      if (thisId !== this.requestId) return;
       this.error = error instanceof Error ? error.message : 'Search failed';
       // items/total intentionally left unchanged so previous results remain visible.
     } finally {
-      this.isLoading = false;
-      for (const listener of this.updateListeners) listener();
+      if (thisId === this.requestId) {
+        this.isLoading = false;
+        for (const listener of this.updateListeners) listener();
+      }
     }
   }
 
@@ -93,6 +100,10 @@ export class ResultsView {
 
   getIsLoading(): boolean {
     return this.isLoading;
+  }
+
+  getLimit(): number {
+    return this.limit;
   }
 
   hasNextPage(): boolean {

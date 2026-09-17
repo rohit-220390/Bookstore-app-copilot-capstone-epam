@@ -152,4 +152,29 @@ describe('SearchFiltersPanel', () => {
     panel.setKeyword('test');
     expect(listener).toHaveBeenCalledTimes(3);
   });
+
+  it('clearAll() clears q keyword state (ENH-005 T5)', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    panel.setKeyword('fantasy');
+    panel.clearAll();
+    expect(panel.getSelectedFilters().q).toBeUndefined();
+  });
+
+  it('clearAll() clears author state (ENH-005 T5)', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    panel.setAuthor('Tolkien');
+    panel.clearAll();
+    expect(panel.getSelectedFilters().author).toBeUndefined();
+  });
+
+  it('clearAll() emits a single change notification even when q and author were set (ENH-005 T5)', () => {
+    const panel = new SearchFiltersPanel('non-fiction');
+    panel.setKeyword('fantasy');
+    panel.setAuthor('Tolkien');
+    const listener = jest.fn();
+    panel.onChange(listener);
+    panel.clearAll();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({});
+  });
 });

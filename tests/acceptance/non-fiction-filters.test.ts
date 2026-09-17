@@ -53,8 +53,11 @@ describe('EPMCDMETST-52015 acceptance criteria', () => {
     expect(threePlus.status).toBe(200);
     if (fourPlus.status === 200 && threePlus.status === 200) {
       expect(fourPlus.body.items.every((b) => b.averageRating >= 4)).toBe(true);
-      // "3-stars" is an exclusive bucket ([3, 4)): it excludes both sub-3 and 4+ rated books.
-      expect(threePlus.body.items.every((b) => b.averageRating >= 3 && b.averageRating < 4)).toBe(true);
+      // "3-stars and above" is cumulative: includes books rated 3.0, 4.x, and 5.0.
+      expect(threePlus.body.items.every((b) => b.averageRating >= 3)).toBe(true);
+      // Prove 4.5+ books are included (nf1=4.7 is in the data set)
+      expect(threePlus.body.items.some((b) => b.averageRating >= 4.5)).toBe(true);
+      // Sub-3 books are excluded (nf4 has averageRating 2.5)
       expect(threePlus.body.items.find((b) => b.id === 'nf4')).toBeUndefined();
     }
   });

@@ -15,6 +15,7 @@ export interface SelectedFilters {
   minRating?: MinRating;
   sort?: SortOption;
   q?: string;
+  author?: string;
 }
 
 export type FilterChangeListener = (filters: SelectedFilters) => void;
@@ -99,6 +100,13 @@ export class SearchFiltersPanel {
   setKeyword(q: string): void {
     const trimmed = q.trim();
     this.selected.q = trimmed.length > 0 ? trimmed : undefined;
+    this.emitChange();
+  }
+
+  /** Sets an author search string; blank/whitespace-only input clears it. */
+  setAuthor(author: string): void {
+    const trimmed = author.trim();
+    this.selected.author = trimmed.length > 0 ? trimmed : undefined;
     this.emitChange();
   }
 

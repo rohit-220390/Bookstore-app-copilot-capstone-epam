@@ -44,6 +44,49 @@ describe('InMemoryFilterPersistence', () => {
     const persistence = new InMemoryFilterPersistence();
     expect(persistence.load('non-fiction')).toBeUndefined();
   });
+
+  it('round-trips author filter (ENH-002 T2)', () => {
+    const persistence = new InMemoryFilterPersistence();
+    persistence.save('non-fiction', { author: 'Ursula' });
+    expect(persistence.load('non-fiction')).toEqual({ author: 'Ursula' });
+  });
+
+  it('drops empty-string author (ENH-002 T2)', () => {
+    const persistence = new InMemoryFilterPersistence();
+    persistence.save('non-fiction', { author: '   ' });
+    expect(persistence.load('non-fiction')).toEqual({});
+  });
+
+  it('drops non-string author (ENH-002 T2)', () => {
+    const persistence = new InMemoryFilterPersistence();
+    // @ts-expect-error intentional type violation to test runtime sanitization
+    persistence.save('non-fiction', { author: 42 });
+    expect(persistence.load('non-fiction')).toEqual({});
+  });
+
+  it('round-trips q keyword filter (ENH-003 T3)', () => {
+    const persistence = new InMemoryFilterPersistence();
+    persistence.save('non-fiction', { q: 'dragon' });
+    expect(persistence.load('non-fiction')).toEqual({ q: 'dragon' });
+  });
+
+  it('drops empty-string q (ENH-003 T3)', () => {
+    const persistence = new InMemoryFilterPersistence();
+    persistence.save('non-fiction', { q: '' });
+    expect(persistence.load('non-fiction')).toEqual({});
+  });
+
+  it('trims whitespace from persisted author (ENH-002 T2)', () => {
+    const persistence = new InMemoryFilterPersistence();
+    persistence.save('non-fiction', { author: '  Le Guin  ' });
+    expect(persistence.load('non-fiction')).toEqual({ author: 'Le Guin' });
+  });
+
+  it('trims whitespace from persisted q (ENH-003 T3)', () => {
+    const persistence = new InMemoryFilterPersistence();
+    persistence.save('non-fiction', { q: '  hobbit  ' });
+    expect(persistence.load('non-fiction')).toEqual({ q: 'hobbit' });
+  });
 });
 
 describe('LocalStorageFilterPersistence', () => {

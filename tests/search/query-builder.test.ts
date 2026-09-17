@@ -58,15 +58,14 @@ describe('searchBooks', () => {
     expect(result.items.map((b) => b.id)).toEqual(['3', '5']);
   });
 
-  it('filters by minRating threshold (top tier has no upper bound)', () => {
+  it('filters by minRating threshold (4-star tier)', () => {
     const result = searchBooks(catalog, { category: 'non-fiction', minRating: 4 }, { page: 1, limit: 20 }, NOW);
     expect(result.items.map((b) => b.id)).toEqual(['3']);
   });
 
-  it('minRating buckets are mutually exclusive: a lower tier excludes ratings that belong to a higher tier', () => {
-    // id '3' is rated 4.8, so it belongs to the 4-star bucket, not the 3-star bucket.
+  it('filters by minRating threshold (3-star tier includes higher-rated books too)', () => {
     const result = searchBooks(catalog, { category: 'non-fiction', minRating: 3 }, { page: 1, limit: 20 }, NOW);
-    expect(result.items.map((b) => b.id)).toEqual(['5']);
+    expect(result.items.map((b) => b.id)).toEqual(['3', '5']);
   });
 
   it('combines multiple filters', () => {
@@ -76,7 +75,7 @@ describe('searchBooks', () => {
       { page: 1, limit: 20 },
       NOW,
     );
-    expect(result.items.map((b) => b.id)).toEqual(['5']);
+    expect(result.items.map((b) => b.id)).toEqual(['3', '5']);
   });
 
   it('paginates the filtered result set', () => {

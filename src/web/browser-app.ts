@@ -22,6 +22,7 @@ const loadingEl = requireElement<HTMLElement>('loading');
 const prevPageBtn = requireElement<HTMLButtonElement>('prev-page');
 const nextPageBtn = requireElement<HTMLButtonElement>('next-page');
 const searchInput = requireElement<HTMLInputElement>('search-input');
+const authorInput = requireElement<HTMLInputElement>('author-input');
 
 const persistence = new LocalStorageFilterPersistence(window.localStorage);
 
@@ -42,6 +43,7 @@ const searchViaApi: SearchFn = async (category, filters, page) => {
   if (filters.minRating !== undefined) params.set('minRating', String(filters.minRating));
   if (filters.sort) params.set('sort', filters.sort);
   if (filters.q) params.set('q', filters.q);
+  if (filters.author) params.set('author', filters.author);
 
   const res = await fetch(`/api/search?${params.toString()}`);
   if (!res.ok) {
@@ -129,6 +131,8 @@ function renderSortDropdown(
     const value = target.value;
     if (value && value !== '') {
       onSelect(value as SortOption);
+    } else {
+      onSelect('relevance' as SortOption);
     }
   });
 
@@ -169,18 +173,19 @@ function render(): void {
 
   loadingEl.hidden = !view.getIsLoading();
 
-  summaryEl.textContent = `${view.getTotal()} result(s) \u2014 page ${view.getPage()}`;
+  const totalPages = Math.max(1, Math.ceil(view.getTotal() / view.getLimit()));
+  summaryEl.textContent = `${view.getTotal()} result(s) — page ${view.getPage()} of ${totalPages}`;
 
   prevPageBtn.disabled = !view.hasPreviousPage();
   nextPageBtn.disabled = !view.hasNextPage();
 
-  // Sync keyword input with current filter state (e.g. after Clear All)
   searchInput.value = selected.q ?? '';
+  authorInput.value = selected.author ?? '';
 
   resultsEl.innerHTML = '';
 
-  // Empty state
-  if (view.getItems().length === 0 && view.getTotal() === 0 && !view.getError()) {
+  // Empty state (skip while a search is in flight to avoid flashing "No results" during loading)
+  if (!view.getIsLoading() && view.getItems().length === 0 && view.getTotal() === 0 && !view.getError()) {
     const emptyMsg = document.createElement('li');
     emptyMsg.textContent = 'No results found.';
     resultsEl.appendChild(emptyMsg);
@@ -215,8 +220,6 @@ async function selectCategory(category: BookCategory): Promise<void> {
   prevPageBtn.onclick = async () => { await view.prevPage(); render(); };
   nextPageBtn.onclick = async () => { await view.nextPage(); render(); };
 
-  searchInput.addEventListener('input', () => panel.setKeyword(searchInput.value));
-
   await view.refresh();
   render();
 }
@@ -227,5 +230,56 @@ for (const tab of tabsEl.querySelectorAll<HTMLButtonElement>('button')) {
     if (category) void selectCategory(category);
   });
 }
+
+// Debounce search to avoid racing concurrent requests on every keystroke
+let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+function triggerSearch(): void {
+  if (panel) panel.setKeyword(searchInput.value);
+}
+
+// Real-time search (debounced 300 ms to prevent rapid concurrent requests)
+searchInput.oninput = () => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(triggerSearch, 300);
+};
+
+// Explicit Enter key — cancels the debounce and searches immediately
+searchInput.onkeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    clearTimeout(searchDebounceTimer);
+    triggerSearch();
+  }
+};
+
+// Handles paste and browser-autocomplete selections that may skip the input event
+searchInput.onchange = () => {
+  clearTimeout(searchDebounceTimer);
+  triggerSearch();
+};
+
+// Author input — same debounce / Enter / change pattern
+let authorDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+function triggerAuthorSearch(): void {
+  if (panel) panel.setAuthor(authorInput.value);
+}
+
+authorInput.oninput = () => {
+  clearTimeout(authorDebounceTimer);
+  authorDebounceTimer = setTimeout(triggerAuthorSearch, 300);
+};
+
+authorInput.onkeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    clearTimeout(authorDebounceTimer);
+    triggerAuthorSearch();
+  }
+};
+
+authorInput.onchange = () => {
+  clearTimeout(authorDebounceTimer);
+  triggerAuthorSearch();
+};
 
 void selectCategory('fiction');

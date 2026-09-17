@@ -16,6 +16,7 @@ export interface RawSearchFilters {
   minRating?: string;
   sort?: string;
   q?: string;
+  author?: string;
 }
 
 export interface ValidatedSearchFilters {
@@ -26,6 +27,7 @@ export interface ValidatedSearchFilters {
   minRating?: MinRating;
   sort?: SortOption;
   q?: string;
+  author?: string;
 }
 
 const VALID_CATEGORIES: BookCategory[] = ['fiction', 'non-fiction'];
@@ -74,6 +76,10 @@ export function validateFilters(raw: RawSearchFilters): ValidatedSearchFilters {
   // Keyword search: trim and pass through if non-empty
   if (raw.q && raw.q.trim().length > 0) {
     result.q = raw.q.trim();
+  }
+  // Author search: trim and pass through if non-empty
+  if (raw.author && raw.author.trim().length > 0) {
+    result.author = raw.author.trim();
   }
 
   return result;

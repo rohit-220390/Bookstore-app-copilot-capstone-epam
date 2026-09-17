@@ -31,6 +31,8 @@ export function handleSearchRequest(
       publicationDate: rawQuery.publicationDate,
       minRating: rawQuery.minRating,
       sort: rawQuery.sort,
+      q: rawQuery.q,
+      author: rawQuery.author,
     });
     const pagination = parsePagination(rawQuery.page, rawQuery.limit);
     const result = searchBooks(catalog, filters, pagination);
@@ -52,7 +54,7 @@ export function createSearchServer(catalog: Book[]): Server {
     }
 
     const rawQuery: Record<string, string | undefined> = {};
-    for (const key of ['category', 'format', 'language', 'publicationDate', 'minRating', 'page', 'limit', 'sort']) {
+    for (const key of ['category', 'format', 'language', 'publicationDate', 'minRating', 'page', 'limit', 'sort', 'q', 'author']) {
       rawQuery[key] = url.searchParams.get(key) ?? undefined;
     }
 

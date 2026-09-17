@@ -61,7 +61,7 @@ export function createAppServer(catalog: Book[]): Server {
 
       if (url.pathname === '/api/search') {
         const rawQuery: Record<string, string | undefined> = {};
-        for (const key of ['category', 'format', 'language', 'publicationDate', 'minRating', 'page', 'limit', 'sort', 'q']) {
+        for (const key of ['category', 'format', 'language', 'publicationDate', 'minRating', 'page', 'limit', 'sort', 'q', 'author']) {
           rawQuery[key] = url.searchParams.get(key) ?? undefined;
         }
         const { status, body } = handleSearchRequest(catalog, rawQuery);
