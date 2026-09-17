@@ -1,7 +1,7 @@
 import type { Book } from '../catalog/book.js';
 import type { ValidatedSearchFilters } from './validate-filters.js';
 import { isWithinPublicationWindow } from './date-filter.js';
-import { getFilterOptions, type SortOption } from '../catalog/filter-catalog.js';
+import { type SortOption } from '../catalog/filter-catalog.js';
 
 export interface Pagination {
   page: number;
@@ -65,8 +65,7 @@ function sortBooks(books: Book[], sort?: SortOption): Book[] {
 /**
  * Filters the catalog by validated filters, then sorts, then paginates. Execution order per DR-013:
  * 1. Filter: Category/format/language are exact matches; publicationDate is threshold-based.
- *    minRating is bucketed (exclusive of the next higher tier) so each Customer Reviews option shows
- *    a distinct rating range rather than an overlapping "and above" set.
+ *    minRating is a threshold: selecting 3 returns 3.0+; selecting 4 returns 4.0+ (KAN-1).
  * 2. Sort: Apply sorting to the filtered result set by the selected sort option.
  * 3. Paginate: Slice the sorted, filtered results by page/limit.
  * Fiction and Non-Fiction run through the same code path, parameterized only by `filters.category`.
@@ -88,13 +87,9 @@ export function searchBooks(
     ) {
       return false;
     }
-    if (filters.minRating !== undefined) {
-      if (book.averageRating < filters.minRating) return false;
-      const tiers = getFilterOptions(filters.category).minRating.slice().sort((a, b) => a - b);
-      const nextTier = tiers[tiers.indexOf(filters.minRating) + 1];
-      if (nextTier !== undefined && book.averageRating >= nextTier) return false;
-    }
+    if (filters.minRating !== undefined && book.averageRating < filters.minRating) return false;
     if (filters.q && !book.title.toLowerCase().includes(filters.q.toLowerCase())) return false;
+    if (filters.author && !book.author.toLowerCase().includes(filters.author.toLowerCase())) return false;
     return true;
   });
 
